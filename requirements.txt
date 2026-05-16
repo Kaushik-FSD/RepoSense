@@ -1,0 +1,13 @@
+fastapi
+uvicorn[standard]
+langchain
+langchain-core
+langchain-groq
+langchain-mistralai
+langchain-huggingface
+langchain-chroma
+sentence-transformers
+chromadb
+pydantic-settings
+python-multipart
+python-dotenv

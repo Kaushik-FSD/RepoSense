@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AI Dev Assistant — Architecture</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Courier New', monospace; background: #0d1117; color: #c9d1d9; padding: 32px; line-height: 1.6; }
+  h1 { color: #58a6ff; font-size: 22px; margin-bottom: 4px; }
+  .subtitle { color: #8b949e; font-size: 13px; margin-bottom: 36px; }
+  h2 { color: #79c0ff; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 14px; border-bottom: 1px solid #21262d; padding-bottom: 6px; }
+  .section { margin-bottom: 36px; }
+
+  /* Tech Stack */
+  .stack-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+  .stack-item { background: #161b22; border: 1px solid #30363d; border-radius: 6px; padding: 12px; }
+  .stack-label { color: #8b949e; font-size: 11px; margin-bottom: 4px; }
+  .stack-value { color: #e6edf3; font-size: 13px; font-weight: bold; }
+  .stack-note { color: #8b949e; font-size: 11px; margin-top: 2px; }
+
+  /* Flow diagram */
+  .flow { display: flex; flex-direction: column; gap: 0; }
+  .flow-row { display: flex; align-items: center; gap: 0; }
+  .flow-box { background: #161b22; border: 1px solid #30363d; border-radius: 6px; padding: 10px 16px; font-size: 13px; white-space: nowrap; }
+  .flow-box.highlight { border-color: #58a6ff; color: #58a6ff; }
+  .flow-box.green { border-color: #3fb950; color: #3fb950; }
+  .flow-box.yellow { border-color: #d29922; color: #d29922; }
+  .arrow { color: #484f58; padding: 0 8px; font-size: 16px; }
+  .arrow-down { color: #484f58; font-size: 16px; padding: 4px 0 4px 20px; }
+
+  /* Modules */
+  .modules-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+  .module-card { background: #161b22; border: 1px solid #30363d; border-radius: 6px; padding: 14px; }
+  .module-title { color: #79c0ff; font-size: 13px; font-weight: bold; margin-bottom: 8px; }
+  .module-tag { display: inline-block; background: #21262d; color: #8b949e; font-size: 11px; border-radius: 4px; padding: 2px 6px; margin: 2px 2px 0 0; }
+  .module-desc { color: #8b949e; font-size: 12px; margin-top: 8px; }
+
+  /* RAG Pipeline */
+  .pipeline { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+  .pipe-step { background: #161b22; border: 1px solid #30363d; border-radius: 6px; padding: 8px 14px; font-size: 12px; text-align: center; }
+  .pipe-step span { display: block; color: #8b949e; font-size: 10px; margin-top: 2px; }
+  .pipe-arrow { color: #484f58; }
+
+  /* Folder */
+  .folder { background: #161b22; border: 1px solid #30363d; border-radius: 6px; padding: 16px; font-size: 12px; line-height: 2; }
+  .folder .dir { color: #79c0ff; }
+  .folder .file { color: #c9d1d9; }
+  .folder .comment { color: #484f58; }
+
+  /* API */
+  .api-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .api-table th { text-align: left; color: #8b949e; padding: 6px 10px; border-bottom: 1px solid #21262d; }
+  .api-table td { padding: 7px 10px; border-bottom: 1px solid #161b22; vertical-align: top; }
+  .method { font-weight: bold; font-size: 11px; padding: 2px 6px; border-radius: 4px; }
+  .post { background: #1f3a1f; color: #3fb950; }
+  .get { background: #1a2f4a; color: #58a6ff; }
+  .endpoint { color: #e6edf3; font-family: 'Courier New', monospace; }
+  .desc { color: #8b949e; }
+</style>
+</head>
+<body>
+
+<h1>AI Dev Assistant — Architecture</h1>
+<p class="subtitle">Backend AI assistant for engineers · FastAPI + LangChain + Groq + ChromaDB</p>
+
+<!-- Tech Stack -->
+<div class="section">
+  <h2>Tech Stack</h2>
+  <div class="stack-grid">
+    <div class="stack-item">
+      <div class="stack-label">API Framework</div>
+      <div class="stack-value">FastAPI</div>
+      <div class="stack-note">Async, Pydantic-native</div>
+    </div>
+    <div class="stack-item">
+      <div class="stack-label">LLM Provider</div>
+      <div class="stack-value">Groq API</div>
+      <div class="stack-note">Llama 3.3 70B · Free tier</div>
+    </div>
+    <div class="stack-item">
+      <div class="stack-label">LLM Fallback</div>
+      <div class="stack-value">Mistral API</div>
+      <div class="stack-note">Mistral 7B · Free tier</div>
+    </div>
+    <div class="stack-item">
+      <div class="stack-label">Embeddings</div>
+      <div class="stack-value">HuggingFace</div>
+      <div class="stack-note">all-MiniLM-L6-v2 · Local/Free</div>
+    </div>
+    <div class="stack-item">
+      <div class="stack-label">Vector DB</div>
+      <div class="stack-value">ChromaDB</div>
+      <div class="stack-note">Local persistent storage</div>
+    </div>
+    <div class="stack-item">
+      <div class="stack-label">Orchestration</div>
+      <div class="stack-value">LangChain</div>
+      <div class="stack-note">Chains, retrievers, prompts</div>
+    </div>
+    <div class="stack-item">
+      <div class="stack-label">Config</div>
+      <div class="stack-value">Pydantic Settings</div>
+      <div class="stack-note">.env based, type-safe</div>
+    </div>
+    <div class="stack-item">
+      <div class="stack-label">Language</div>
+      <div class="stack-value">Python 3.11+</div>
+      <div class="stack-note">Async support</div>
+    </div>
+  </div>
+</div>
+
+<!-- System Flow -->
+<div class="section">
+  <h2>System Flow (Request Lifecycle)</h2>
+  <div class="flow">
+    <div class="flow-row">
+      <div class="flow-box highlight">User / API Client</div>
+      <div class="arrow">→</div>
+      <div class="flow-box">FastAPI Router</div>
+      <div class="arrow">→</div>
+      <div class="flow-box">Module Service</div>
+      <div class="arrow">→</div>
+      <div class="flow-box yellow">RAG Pipeline</div>
+    </div>
+    <div class="arrow-down">↓</div>
+    <div class="flow-row">
+      <div class="flow-box green">LLM Response</div>
+      <div class="arrow">←</div>
+      <div class="flow-box">Groq / Mistral LLM</div>
+      <div class="arrow">←</div>
+      <div class="flow-box">Prompt + Context</div>
+      <div class="arrow">←</div>
+      <div class="flow-box">ChromaDB Retriever</div>
+    </div>
+  </div>
+</div>
+
+<!-- RAG Pipeline -->
+<div class="section">
+  <h2>RAG Pipeline (Ingestion + Query)</h2>
+  <p style="color:#8b949e; font-size:12px; margin-bottom:12px;">Ingestion (one-time per repo/log/PR)</p>
+  <div class="pipeline" style="margin-bottom:16px;">
+    <div class="pipe-step">Raw Input<span>file / diff / log</span></div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step">Parse<span>file_parser.py</span></div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step">Chunk<span>code-aware splitter</span></div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step">Embed<span>MiniLM-L6-v2</span></div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step">Store<span>ChromaDB</span></div>
+  </div>
+  <p style="color:#8b949e; font-size:12px; margin-bottom:12px;">Query (per user request)</p>
+  <div class="pipeline">
+    <div class="pipe-step">User Query</div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step">Embed Query<span>same model</span></div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step">Retrieve<span>top-k chunks</span></div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step">Build Prompt<span>context inject</span></div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step">LLM<span>Groq</span></div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step">Response</div>
+  </div>
+</div>
+
+<!-- Modules -->
+<div class="section">
+  <h2>Feature Modules</h2>
+  <div class="modules-grid">
+    <div class="module-card">
+      <div class="module-title">📁 Repo Assistant</div>
+      <div>
+        <span class="module-tag">RAG</span>
+        <span class="module-tag">Embeddings</span>
+        <span class="module-tag">Code Chunking</span>
+      </div>
+      <div class="module-desc">Ingest a repo, chunk code files intelligently, answer architecture/implementation questions via retrieval.</div>
+    </div>
+    <div class="module-card">
+      <div class="module-title">🔀 PR Summarizer</div>
+      <div>
+        <span class="module-tag">Diff Parsing</span>
+        <span class="module-tag">Structured Output</span>
+      </div>
+      <div class="module-desc">Takes PR diff, retrieves related context, produces summary + affected modules + risk analysis.</div>
+    </div>
+    <div class="module-card">
+      <div class="module-title">🪵 Log Analyzer</div>
+      <div>
+        <span class="module-tag">Pattern Detection</span>
+        <span class="module-tag">RAG</span>
+      </div>
+      <div class="module-desc">Ingests application logs, finds error patterns, suggests probable root causes via LLM.</div>
+    </div>
+    <div class="module-card">
+      <div class="module-title">📝 Release Notes</div>
+      <div>
+        <span class="module-tag">Structured Gen</span>
+        <span class="module-tag">Prompt Engineering</span>
+      </div>
+      <div class="module-desc">Accepts commit messages / PR titles, outputs a structured, human-readable changelog.</div>
+    </div>
+  </div>
+</div>
+
+<!-- Folder Structure -->
+<div class="section">
+  <h2>Folder Structure</h2>
+  <div class="folder">
+    <span class="dir">ai-dev-assistant/</span><br>
+    &nbsp;&nbsp;<span class="dir">app/</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;<span class="file">main.py</span> <span class="comment"># FastAPI app, router registration</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;<span class="file">config.py</span> <span class="comment"># Pydantic Settings + .env</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;<span class="dir">core/</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">llm.py</span> <span class="comment"># Groq/Mistral LangChain client</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">embeddings.py</span> <span class="comment"># HuggingFaceEmbeddings setup</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">vectorstore.py</span> <span class="comment"># ChromaDB client + collections</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">prompts.py</span> <span class="comment"># Shared prompt templates</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;<span class="dir">modules/</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="dir">repo/</span> <span class="comment"># router, service, chunker, schemas</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="dir">pr/</span> <span class="comment"># router, service, schemas</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="dir">logs/</span> <span class="comment"># router, service, schemas</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="dir">release/</span> <span class="comment"># router, service, schemas</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;<span class="dir">utils/</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">file_parser.py</span> <span class="comment"># File reading, ext detection</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">text_utils.py</span> <span class="comment"># Text cleaning helpers</span><br>
+    &nbsp;&nbsp;<span class="dir">storage/</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;<span class="dir">chroma/</span> <span class="comment"># ChromaDB persistent files</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;<span class="dir">uploads/</span> <span class="comment"># Temp uploaded files</span><br>
+    &nbsp;&nbsp;<span class="file">.env</span><br>
+    &nbsp;&nbsp;<span class="file">requirements.txt</span>
+  </div>
+</div>
+
+<!-- API Endpoints -->
+<div class="section">
+  <h2>API Endpoints (MVP)</h2>
+  <table class="api-table">
+    <tr>
+      <th>Method</th><th>Endpoint</th><th>Description</th>
+    </tr>
+    <tr>
+      <td><span class="method post">POST</span></td>
+      <td class="endpoint">/repo/ingest</td>
+      <td class="desc">Upload + parse + embed a repository (zip or folder path)</td>
+    </tr>
+    <tr>
+      <td><span class="method post">POST</span></td>
+      <td class="endpoint">/repo/ask</td>
+      <td class="desc">Ask a question about the ingested repo</td>
+    </tr>
+    <tr>
+      <td><span class="method post">POST</span></td>
+      <td class="endpoint">/pr/analyze</td>
+      <td class="desc">Submit PR diff → get summary + risk analysis</td>
+    </tr>
+    <tr>
+      <td><span class="method post">POST</span></td>
+      <td class="endpoint">/logs/analyze</td>
+      <td class="desc">Submit log text → get error patterns + root causes</td>
+    </tr>
+    <tr>
+      <td><span class="method post">POST</span></td>
+      <td class="endpoint">/release/generate</td>
+      <td class="desc">Submit commit list → get structured release notes</td>
+    </tr>
+    <tr>
+      <td><span class="method get">GET</span></td>
+      <td class="endpoint">/health</td>
+      <td class="desc">Health check</td>
+    </tr>
+  </table>
+</div>
+
+<!-- Build Order -->
+<div class="section">
+  <h2>MVP Build Order</h2>
+  <div class="stack-grid">
+    <div class="stack-item">
+      <div class="stack-label">Phase 1</div>
+      <div class="stack-value">Core Setup</div>
+      <div class="stack-note">FastAPI skeleton · LLM · Embeddings · ChromaDB wiring · Config</div>
+    </div>
+    <div class="stack-item">
+      <div class="stack-label">Phase 2</div>
+      <div class="stack-value">Repo Assistant</div>
+      <div class="stack-note">File parsing · Code chunking · Ingestion · RAG Q&A</div>
+    </div>
+    <div class="stack-item">
+      <div class="stack-label">Phase 3</div>
+      <div class="stack-value">PR Summarizer</div>
+      <div class="stack-note">Diff parsing · Context retrieval · Structured summary</div>
+    </div>
+    <div class="stack-item">
+      <div class="stack-label">Phase 4</div>
+      <div class="stack-value">Log + Release</div>
+      <div class="stack-note">Log pattern analysis · Release notes generator</div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
