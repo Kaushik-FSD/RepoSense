@@ -36,3 +36,6 @@ async def health_check():
         "version": settings.APP_VERSION,
         "llm_provider": settings.LLM_PROVIDER,
     }
+
+from app.modules.repo.router import router as repo_router
+app.include_router(repo_router, prefix="/repo", tags=["Repo Assistant"])
