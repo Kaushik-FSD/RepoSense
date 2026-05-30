@@ -43,7 +43,8 @@ Return ONLY valid JSON, no extra text:
       "type": "error category",
       "message": "error message",
       "frequency": "how many times",
-      "severity": "critical | high | medium | low"
+      "severity": "critical | high | medium | low",
+      "suggested_fix": "specific fix for this error"
     }}
   ],
   "patterns": ["pattern1"],

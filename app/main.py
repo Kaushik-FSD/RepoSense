@@ -2,6 +2,12 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import get_settings
 
+from app.modules.repo.router import router as repo_router
+from app.modules.pr.router import router as pr_router
+from app.modules.logs.router import router as logs_router
+from app.modules.release.router import router as release_router
+from app.modules.admin.router import router as admin_router
+
 settings = get_settings()
 
 app = FastAPI(
@@ -17,17 +23,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Routers — uncomment as we build each module
-# from app.modules.repo.router import router as repo_router
-# from app.modules.pr.router import router as pr_router
-# from app.modules.logs.router import router as logs_router
-# from app.modules.release.router import router as release_router
-
-# app.include_router(repo_router, prefix="/repo", tags=["Repo Assistant"])
-# app.include_router(pr_router, prefix="/pr", tags=["PR Summarizer"])
-# app.include_router(logs_router, prefix="/logs", tags=["Log Analyzer"])
-# app.include_router(release_router, prefix="/release", tags=["Release Notes"])
-
 @app.get("/health", tags=["Health"])
 async def health_check():
     return {
@@ -37,5 +32,11 @@ async def health_check():
         "llm_provider": settings.LLM_PROVIDER,
     }
 
-from app.modules.repo.router import router as repo_router
+# Admin cleanup router
+app.include_router(admin_router, prefix="/admin", tags=["Admin"])
+
+
 app.include_router(repo_router, prefix="/repo", tags=["Repo Assistant"])
+app.include_router(pr_router, prefix="/pr", tags=["PR Summarizer"])
+app.include_router(logs_router, prefix="/logs", tags=["Log Analyzer"])
+app.include_router(release_router, prefix="/release", tags=["Release Notes"])

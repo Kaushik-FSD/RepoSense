@@ -51,3 +51,9 @@ def delete_collection(collection_name: str) -> None:
     existing = [c.name for c in client.list_collections()]
     if collection_name in existing:
         client.delete_collection(name=collection_name)
+
+# util to delete all collections - seperate api to clean the chroma db during development/testing. Use with caution in production.
+def delete_all_collections() -> None:
+    client = get_chroma_client()
+    for collection in client.list_collections():
+        client.delete_collection(name=collection.name)
