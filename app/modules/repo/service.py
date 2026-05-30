@@ -1,4 +1,5 @@
 import os
+import subprocess
 import json
 import shutil
 from langchain_core.documents import Document
@@ -11,16 +12,40 @@ from app.modules.repo.schema import IngestResponse, AskResponse, RepoAnswer
 
 CLONE_DIR = "./storage/uploads/repo"
 
+def build_clone_url(github_url: str, token: str | None) -> str:
+    if token:
+        return github_url.replace("https://", f"https://{token}@")
+    return github_url
 
-def ingest_repo(github_url: str, collection_name: str) -> IngestResponse:
+def clone_repo(clone_url: str, clone_dir: str) -> int:
+    result = subprocess.run(
+        ["git", "clone", clone_url, clone_dir],
+        timeout=30,  # 30 seconds max
+        capture_output=True,
+        text=True
+    )
+    return result.returncode
+
+def ingest_repo(github_url: str, collection_name: str, github_token: str | None = None) -> IngestResponse:
     # 1. clean previous clone if exists
     if os.path.exists(CLONE_DIR):
         shutil.rmtree(CLONE_DIR)
 
     # 2. clone the repo
-    exit_code = os.system(f"git clone {github_url} {CLONE_DIR}")
+    clone_url = build_clone_url(github_url, github_token)
+
+    # Note: subprocess.run with timeout will raise TimeoutExpired if it exceeds the time limit, which we catch and convert to a ValueError for consistent error handling in the API layer.
+    try:
+        exit_code = clone_repo(clone_url, CLONE_DIR)
+    except subprocess.TimeoutExpired:
+        raise ValueError("Cloning timed out. Check the URL or token and try again.")
+
+
     if exit_code != 0:
-        raise ValueError(f"Failed to clone repo: {github_url}")
+        if github_token is None:
+            raise ValueError("Failed to clone repo. If this is a private repo, please provide a github_token.")
+        else:
+            raise ValueError("Failed to clone repo. Please check if the token has correct permissions.")
 
     # 3. load files into Documents
     documents = load_documents_from_repo(CLONE_DIR)

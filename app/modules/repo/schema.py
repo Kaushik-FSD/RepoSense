@@ -6,6 +6,7 @@ from typing import Optional
 class IngestRequest(BaseModel):
     github_url: Optional[str] = None      # public github repo URL
     collection_name: Optional[str] = "repo_chunks"  # allow custom collection
+    github_token: str | None = None  # optional token for private repos or higher rate limits
 
 class AskRequest(BaseModel):
     question: str
