@@ -190,6 +190,12 @@ uvicorn app.main:app --reload
 Server starts at `http://localhost:8000`
 Swagger UI at `http://localhost:8000/docs`
 
+```bash
+streamlit run ui/app.py
+```
+
+Ui starts at `http://localhost:8501`
+
 ---
 
 ## API Endpoints
