@@ -57,3 +57,7 @@ def delete_all_collections() -> None:
     client = get_chroma_client()
     for collection in client.list_collections():
         client.delete_collection(name=collection.name)
+
+def reset_chroma_client():
+    get_chroma_client.cache_clear()
+    get_vectorstore.cache_clear() if hasattr(get_vectorstore, 'cache_clear') else None

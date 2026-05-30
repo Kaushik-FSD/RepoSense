@@ -13,3 +13,7 @@ chromadb
 pydantic-settings
 python-multipart
 python-dotenv
+
+# UI
+streamlit
+requests

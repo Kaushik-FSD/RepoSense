@@ -1,7 +1,7 @@
 import shutil
 import os
 from fastapi import APIRouter
-from app.core.vectorstore import delete_all_collections
+from app.core.vectorstore import delete_all_collections, reset_chroma_client
 
 router = APIRouter()
 
@@ -9,6 +9,7 @@ router = APIRouter()
 async def cleanup():
     # 1. delete all chroma collections
     delete_all_collections()
+    reset_chroma_client()  # clear cached client
 
     # 2. wipe chroma storage folder
     if os.path.exists("./storage/chroma"):
